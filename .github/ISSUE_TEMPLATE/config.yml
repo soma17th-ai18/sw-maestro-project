@@ -1,5 +1,1 @@
-blank_issues_enabled: false
-contact_links:
-  - name: "일반 질문"
-    url: https://github.com/UpstageAI/sw-maestro-project/discussions
-    about: "프로젝트 관련 일반 질문은 Discussions를 이용해주세요."
+blank_issues_enabled: true
