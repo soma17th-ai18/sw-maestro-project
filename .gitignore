@@ -1,1 +1,29 @@
 .omc/
+
+# Local editor/system files
+.DS_Store
+
+# Local environment and runtime artifacts
+.env
+.env.*
+!.env.example
+.venv/
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache/test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node/Next.js artifacts
+node_modules/
+.next/
+out/
+
+# Local project workspace leftovers.
+# Submitted code lives under projects/, so ignore only root-level copies.
+/app/
+/frontend/
+/tests/
