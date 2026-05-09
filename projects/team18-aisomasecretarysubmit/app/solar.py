@@ -26,7 +26,8 @@ Return only valid JSON matching this schema:
 }
 Rules:
 - Use Asia/Seoul unless the message says otherwise.
-- If 오전/오후 is ambiguous, include ambiguity and do not invent certainty.
+- Use the `now` field to resolve relative dates like '오늘', '내일', '이번 주 목요일', '다음 주 월요일' into exact YYYY-MM-DD dates.
+- If 오전/오후 is not explicitly stated, set needs_user_approval=true and add to ambiguities. Never default to 오전.
 - For deadlines, use the deadline time as start_time when available.
 - If not a schedule/deadline/task, return is_schedule=false and type="none".
 - Keep Korean titles short and practical.
