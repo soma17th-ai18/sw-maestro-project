@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 
 from openai import OpenAI
 
@@ -34,6 +35,16 @@ Rules:
 """
 
 
+def get_week_dates() -> dict:
+    today = datetime.now()
+    monday = today - timedelta(days=today.weekday())
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    this_week = {days[i]: (monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)}
+    next_monday = monday + timedelta(weeks=1)
+    next_week = {days[i]: (next_monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)}
+    return {"this_week": this_week, "next_week": next_week}
+
+
 def parse_solar_json(raw: str) -> ScheduleAnalysis:
     cleaned = raw.strip()
     if cleaned.startswith("```"):
@@ -49,9 +60,11 @@ class SolarAnalyzer:
         self.client = OpenAI(api_key=settings.upstage_api_key, base_url=settings.upstage_base_url)
 
     def analyze(self, text: str, *, created_at: str | None = None, correction: str | None = None) -> ScheduleAnalysis:
-        now = datetime.now().strftime("%Y-%m-%d %H:%M")
+        now = datetime.now().strftime("%Y-%m-%d %H:%M (%A)")
+        print(f"[Solar] now={now}")
         user_content = {
             "now": now,
+            "week_dates": get_week_dates(),
             "message_created_at": created_at,
             "message": text,
             "correction": correction,
@@ -65,4 +78,26 @@ class SolarAnalyzer:
             temperature=0,
         )
         content = response.choices[0].message.content or "{}"
-        return parse_solar_json(content)
+        print(f"[Solar] response={content}")
+        result = parse_solar_json(content)
+        if result.date:
+            from datetime import date
+            parsed_date = date.fromisoformat(result.date)
+            if parsed_date < date.today():
+                result.needs_user_approval = True
+                if "과거 날짜입니다" not in result.ambiguities:
+                    result.ambiguities.append("과거 날짜입니다")
+        if result.start_time and not result.needs_user_approval:
+            hour = int(result.start_time.split(":")[0])
+            has_ampm = any(k in text for k in ["오전", "오후", "am", "AM", "pm", "PM"])
+            has_time = bool(re.search(r"\d+\s*시", text))
+            if has_time and not has_ampm and hour < 13:
+                result.needs_user_approval = True
+                if "오전/오후가 불분명합니다" not in result.ambiguities:
+                    result.ambiguities.append("오전/오후가 불분명합니다")
+        tomorrow_expressions = ["내일", "낼", "명일", "tomorrow", "tmr", "tmrw"]
+        if any(expr in text for expr in tomorrow_expressions) and 0 <= datetime.now().hour < 6:
+            result.needs_user_approval = True
+            if "새벽에 보낸 메시지로 '내일'이 당일을 의미할 수 있습니다" not in result.ambiguities:
+                result.ambiguities.append("새벽에 보낸 메시지로 '내일'이 당일을 의미할 수 있습니다")
+        return result
