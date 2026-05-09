@@ -96,8 +96,11 @@ class SolarAnalyzer:
                 if "오전/오후가 불분명합니다" not in result.ambiguities:
                     result.ambiguities.append("오전/오후가 불분명합니다")
         tomorrow_expressions = ["내일", "낼", "명일", "tomorrow", "tmr", "tmrw"]
-        if any(expr in text for expr in tomorrow_expressions) and 0 <= datetime.now().hour < 6:
-            result.needs_user_approval = True
-            if "새벽에 보낸 메시지로 '내일'이 당일을 의미할 수 있습니다" not in result.ambiguities:
-                result.ambiguities.append("새벽에 보낸 메시지로 '내일'이 당일을 의미할 수 있습니다")
+        if any(expr in text for expr in tomorrow_expressions):
+            from datetime import date, timedelta
+            result.date = (date.today() + timedelta(days=1)).isoformat()
+            if 0 <= datetime.now().hour < 6:
+                result.needs_user_approval = True
+                if "새벽에 보낸 메시지로 '내일'이 당일을 의미할 수 있습니다" not in result.ambiguities:
+                    result.ambiguities.append("새벽에 보낸 메시지로 '내일'이 당일을 의미할 수 있습니다")
         return result

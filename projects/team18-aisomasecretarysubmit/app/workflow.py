@@ -25,7 +25,7 @@ def should_notify(analysis: ScheduleAnalysis) -> bool:
 
 
 def candidate_status(analysis: ScheduleAnalysis) -> str:
-    if not analysis.has_required_time or analysis.ambiguities:
+    if not analysis.has_required_time:
         return "needs_edit"
     return "pending"
 
@@ -194,7 +194,7 @@ async def perform_candidate_action(
         if not user["google_token_json"]:
             await notify_user(user, "Google Calendar 연결이 필요합니다. 먼저 Google 연결을 완료해주세요.", enabled=notify_webex)
             return {"status": "needs_google"}
-        if not analysis.has_required_time or analysis.ambiguities:
+        if not analysis.has_required_time:
             await notify_user(user, "날짜/시간이 아직 불명확해 등록하지 않았습니다. 수정 후 다시 등록해주세요.", enabled=notify_webex)
             return {"status": "needs_edit"}
         source_text = source_text_for_candidate(database, candidate)
